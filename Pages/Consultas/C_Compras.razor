@@ -1,0 +1,98 @@
+﻿@page "/Compras"
+@inject ComprasBLL comprasBLL
+@inject NavigationManager navigationManager;
+
+<EditForm Model="this"> 
+
+    <div class="card">
+
+        <div class="card-header">
+            <h4 style="text-align: center;">Consulta de compra</h4>
+        </div>
+
+        <div class="card-body">
+        
+            <div class="row">
+
+                <div class="col-3">
+                    <label>Desde</label>
+                    <InputDate class="form-control" @bind-Value="FechaDesde" />
+                    <ValidationMessage For="@(() => FechaDesde)" />
+                </div>
+            
+                <div class="col-3">
+                    <label>Hasta</label>
+                    <InputDate class="form-control" @bind-Value="FechaHasta" />
+                    <ValidationMessage For="@(() => FechaHasta)" />
+                </div>
+
+                <div class="col-3">
+                    <br/>
+                    <button @onclick="Buscar" class="btn btn-primary" >
+                        <i class="oi oi-magnifying-glass"/>
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <table class="table table-striped table-hover mt-4" style="cursor: pointer;">
+        
+        <thead class="thead">
+            <tr class="table">
+                <th>CompraId</th>
+                <th>Fecha</th>
+                <th>Suplidor</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        
+        <tbody>
+            
+            @foreach (var compra in comprasList)
+            {
+                <tr @onclick="(() => redireccionar(compra.CompraId))">
+                    <td>@compra.CompraId</td> 
+                    <td>@compra.Fecha</td>
+                    <td>@compra.Suplidor</td>
+                    <td>@compra.Total </td> 
+                </tr>
+            }
+
+        </tbody>
+
+    </table>
+
+    <div class="row d-flex justify-content-between">
+
+        <div class="col-3">
+            <label>Cantidad de registros</label>
+            <span class="form-control"> @comprasList.Count </span>
+        </div>
+        
+        <div class="col-3">
+            <label>Total</label>
+            <span class="form-control"> @comprasList.Sum(c => c.Total).ToString("N2") </span>
+        </div>
+
+    </div>
+
+</EditForm>
+
+@code {
+    public DateTime FechaDesde { get; set; }
+    public DateTime FechaHasta { get; set; } = DateTime.Today;
+    public List<Compras> comprasList { get; set; } = new List<Compras>();
+
+    void Buscar()
+    {
+        comprasList = comprasBLL.BuscarPorFecha(FechaDesde, FechaHasta);
+    }
+
+    public void redireccionar(int compraId)
+    {
+        navigationManager.NavigateTo("compra/" + compraId);
+    }
+}

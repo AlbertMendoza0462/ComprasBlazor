@@ -1,0 +1,239 @@
+﻿@page "/Compra"
+@page "/Compra/{CompraId:int}"
+
+@inject ComprasBLL comprasBLL
+@inject ProductosBLL productosBLL
+@inject NavigationManager navigationManager;
+
+<EditForm Model="compra" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+
+    <div class="card text-dark bg-light mb-3 shadow-lg">
+
+        <div class="card-header">
+            <h3>Registro de Compras</h3>
+        </div>
+
+        <div class="card-body">
+
+            <div class="col-2">
+                <label>Suplidor</label>
+                <InputText class="form-control" @bind-Value="compra.Suplidor" /> 
+                <ValidationMessage For="@(() => compra.Suplidor)" />
+            </div>  
+
+            <div class="row justify-content-between">
+
+                <div class="col-3">
+                    <label>Codigo</label>
+                    <div class="input-group mb-3">
+                        @if (CompraId == 0)
+                        {
+                            <InputNumber class="form-control" @bind-Value="compra.CompraId" />
+                            <button class="btn btn-outline-primary" type="button" @onclick="Buscar"> <i class="oi oi-magnifying-glass" /> </button>
+                        }
+                        else
+                        {
+                            <InputNumber class="form-control" @bind-Value="compra.CompraId" disabled />
+                            <button class="btn btn-outline-primary" type="button" @onclick="Buscar" disabled> <i class="oi oi-magnifying-glass" /> </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-3">
+                    <label>Fecha</label>
+                    <InputDate class="form-control" @bind-Value="compra.Fecha" />
+                    <ValidationMessage For="@(() => compra.Fecha)" />
+                </div>
+            </div>
+            
+            <fieldset class="border-success">
+
+                <div class="row">
+
+                    <div class="col-2">
+                        <label>Producto</label>
+                        <InputSelect class="form-select" @bind-Value="Detalle.ProductoId">
+                            <option value="0" disabled> Seleccione </option> 
+                            @foreach( var producto in ProductList)
+                            {
+                                <option value="@producto.ProductoId"> @producto.Descripcion</option> 
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => Detalle.ProductoId)" />
+                    </div>
+
+                    <div class="col-2">
+                        <label>Cantidad</label>
+                        <InputNumber class="form-control" @bind-Value="Detalle.Cantidad" />
+                        <ValidationMessage For="@(() => Detalle.Cantidad)" />
+                    </div>
+
+                    <div class="col-2">
+                        <br />
+                        <button type="button" class="btn btn-success" @onclick="AgregarDetalle">
+                            <span class="oi oi-plus">Agregar</span>
+                        </button>
+                    </div>
+
+                </div>
+
+            </fieldset>
+
+            <hr />
+
+            <table class="table table-bordered table-light">
+
+                <thead class="thead">
+                    <tr class="table">
+                        <th>ProductoId</th>
+                        <th>Descripción</th>
+                        <th>Costo</th>
+                        <th>Cantidad</th>
+                        <th>Importe</th> 
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var detalle in compra.Detalle)
+                    {
+                        <tr>
+                            <td>@detalle.ProductoId</td>
+                            <td>@ProductList.Find(d => d.ProductoId == detalle.ProductoId).Descripcion</td>
+                            <td>@detalle.Costo</td>
+                            <td>@detalle.Cantidad</td>
+                            <td>RD$@detalle.Importe</td>
+                            <td><button type="button" class="btn btn-danger" @onclick="(() => eliminarDetalle(detalle))"><i class="oi oi-trash" /></button></td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+
+            <hr />
+
+            <div class="row d-flex justify-content-end">
+                <div class="col-3">
+                    <label>Total</label>
+                    <span class="form-control"> @compra.Total.ToString("N2") </span>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="card-footer d-flex justify-content-center">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-primary" @onclick="nuevo"> <i class="oi oi-file" /> Nuevo</button>
+                <button type="submit" class="btn btn-success"> <i class="oi oi-document" /> Guardar</button>
+                <button type="button" class="btn btn-danger"><i class="oi oi-trash" /> Eliminar</button>
+            </div>
+        </div>
+
+    </div>
+
+</EditForm>
+
+@code {
+    [Parameter]
+    public int CompraId { get; set; }
+    public Compras compra { get; set; }
+    public List<Productos> ProductList { get; set; }
+
+    public ComprasDetalle Detalle { get; set; } 
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        ProductList = productosBLL.GetList();
+
+        nuevo();
+
+        if (CompraId > 0)
+        {
+            var tmp = comprasBLL.Buscar(CompraId);
+            if (tmp != null)
+            {
+                compra = tmp;
+
+
+            }
+        }
+    }
+
+    void eliminarDetalle(ComprasDetalle detalle)
+    {
+        var producto = productosBLL.Buscar(detalle.ProductoId);
+        producto.Existencia -= detalle.Cantidad;
+        compra.Detalle.Remove(detalle);
+    }
+
+    void Buscar()
+    {
+        var tmp = comprasBLL.Buscar(compra.CompraId);
+        if(tmp != null)
+        {
+            compra = tmp;
+        }
+        else
+        {
+            nuevo();
+        }
+    }
+
+    void eliminar()
+    {
+        if (CompraId != 0)
+        {
+            comprasBLL.Eliminar(compra);
+        }
+    }
+
+    public void AgregarDetalle()
+    {
+        if (Detalle.ProductoId < 1 || Detalle.Cantidad < 1)
+        {
+            Console.WriteLine("Detalle invalido");
+            return;
+        }
+
+        var producto = productosBLL.Buscar(Detalle.ProductoId);
+
+        Detalle.Descripcion = producto.Descripcion;
+        Detalle.Costo = producto.Costo;
+        compra.Detalle.Add(Detalle);
+        Detalle = new ComprasDetalle();
+        compra.Total = compra.Detalle.Sum(det => det.Importe);
+    }
+
+    void Guardar()
+    {
+        if (compra.Detalle.Count < 1 || compra.Total < 1 || String.IsNullOrEmpty(compra.Suplidor))
+        {
+            Console.WriteLine("Compra invalida");
+            return;
+        }
+
+        comprasBLL.Guardar(this.compra);
+        nuevo();
+        if (CompraId != 0)
+        {
+            redireccionar();
+        }
+    }
+
+    void nuevo()
+    {
+        compra = new Compras();
+        compra.CompraId = 0;
+        compra.Fecha = DateTime.Now;
+        compra.Total = 0;
+        Detalle = new ComprasDetalle();
+    }
+
+    public void redireccionar()
+    {
+        navigationManager.NavigateTo("compra");
+    }
+}
