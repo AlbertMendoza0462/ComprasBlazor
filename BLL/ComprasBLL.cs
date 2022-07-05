@@ -19,98 +19,110 @@ namespace ComprasBlazor.BLL
 
         public bool Guardar(Compras compra)
         {
-            bool success = false;
-            if (!Existe(compra.CompraId))
-            {
-                success = Insertar(compra);
-            }
-            else
-            {
-                success = Modificar(compra);
-            }
-            return success;
+            return !Existe(compra.CompraId) ? Insertar(compra) : Modificar(compra);
         }
 
         public bool Insertar(Compras compra)
         {
+            _contexto.Compras.Add(compra);
+
             foreach (var item in compra.Detalle)
             {
                 var producto = _contexto.Productos.Find(item.ProductoId);
-
                 producto.Existencia += item.Cantidad;
-
             }
-            _contexto.Compras.Add(compra);
-            return (_contexto.SaveChanges() > 0);
+
+            bool paso = _contexto.SaveChanges() > 0;
+
+            _contexto.Entry(compra).State = EntityState.Detached;
+
+            return paso;
         }
 
         public bool Modificar(Compras compra)
         {
-            var dbTmp = Buscar(compra.CompraId);
+            var anterior = _contexto.Compras
+               .Where(c => c.CompraId == compra.CompraId)
+               .Include(c => c.Detalle)
+               .AsNoTracking()
+               .SingleOrDefault();
 
-            foreach (var item in dbTmp.Detalle)
+            foreach (var item in anterior.Detalle)
             {
                 var producto = _contexto.Productos.Find(item.ProductoId);
-
                 producto.Existencia -= item.Cantidad;
-
             }
+            _contexto.Entry(anterior).State = EntityState.Detached;
+
+            anterior = null;
+
+            _contexto.Database.ExecuteSqlRaw($"DELETE FROM ComprasDetalle WHERE CompraId={compra.CompraId};");
 
             foreach (var item in compra.Detalle)
             {
                 var producto = _contexto.Productos.Find(item.ProductoId);
-
                 producto.Existencia += item.Cantidad;
 
+                _contexto.Entry(item).State = EntityState.Added;
             }
 
-            var lista = new List<ComprasDetalle>(compra.Detalle);
+            _contexto.Entry(compra).State = EntityState.Modified;
 
-            foreach (var item in compra.Detalle)
-            {
-                item.CompraDetalleId = 0;
+            var guardo = _contexto.SaveChanges() > 0;
 
-            }
+            _contexto.Entry(compra).State = EntityState.Detached;
 
-            _contexto.Entry(compra).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-            return (_contexto.SaveChanges() > 0);
+            return guardo;
         }
 
         public bool Eliminar(Compras compra)
         {
-            compra = Buscar(compra.CompraId);
+            _contexto.Entry(compra).State = EntityState.Deleted;
 
             foreach (var item in compra.Detalle)
             {
                 var producto = _contexto.Productos.Find(item.ProductoId);
-
                 producto.Existencia -= item.Cantidad;
-
             }
-            _contexto.Entry(compra).State = Microsoft.EntityFrameworkCore.EntityState.Deleted;
-            return (_contexto.SaveChanges() > 0);
+
+            _contexto.Database.ExecuteSqlRaw($"DELETE FROM ComprasDetalle WHERE CompraId={compra.CompraId};");
+
+            bool paso = _contexto.SaveChanges() > 0;
+
+            _contexto.Entry(compra).State = EntityState.Detached;
+
+            return paso;
         }
 
         public Compras? Buscar(int compraId)
         {
-            return _contexto.Compras
+            Compras? compra = _contexto.Compras
                 .Include(c => c.Detalle)
                 .Where(c => c.CompraId == compraId)
+                .AsNoTracking()
                 .SingleOrDefault();
+
+
+            return compra;
         }
 
-        public List<Compras> BuscarPorFecha(DateTime desde, DateTime hasta)
+        public List<Compras> GetListByDate(DateTime desde, DateTime hasta)
         {
             var compras = _contexto.Compras
                 .Where(c => desde.Date <= c.Fecha.Date && hasta.Date >= c.Fecha.Date)
-                .AsNoTracking().ToList();
+                .AsNoTracking()
+                .ToList();
 
             return compras;
         }
 
         public List<Compras> GetList()
         {
-           return _contexto.Compras.AsNoTracking().ToList();
+           List<Compras> compras = _contexto.Compras
+                .AsNoTracking()
+                .ToList();
+
+            return compras;
         }
     }
 }

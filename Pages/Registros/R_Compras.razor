@@ -72,7 +72,7 @@
                     <div class="col-2">
                         <br />
                         <button type="button" class="btn btn-success" @onclick="AgregarDetalle">
-                            <span class="oi oi-plus">Agregar</span>
+                            <span class="oi oi-plus"> Agregar</span>
                         </button>
                     </div>
 
@@ -125,8 +125,8 @@
         <div class="card-footer d-flex justify-content-center">
             <div class="btn-group" role="group">
                 <button type="button" class="btn btn-primary" @onclick="nuevo"> <i class="oi oi-file" /> Nuevo</button>
-                <button type="submit" class="btn btn-success"> <i class="oi oi-document" /> Guardar</button>
-                <button type="button" class="btn btn-danger"><i class="oi oi-trash" /> Eliminar</button>
+                <button type="submit" class="btn btn-success" > <i class="oi oi-document" /> Guardar</button>
+                <button type="button" class="btn btn-danger" @onclick="eliminar"><i class="oi oi-trash" /> Eliminar</button>
             </div>
         </div>
 
@@ -148,7 +148,11 @@
 
         ProductList = productosBLL.GetList();
 
-        nuevo();
+        compra = new Compras();
+        compra.CompraId = 0;
+        compra.Fecha = DateTime.Now;
+        compra.Total = 0;
+        Detalle = new ComprasDetalle();
 
         if (CompraId > 0)
         {
@@ -156,8 +160,6 @@
             if (tmp != null)
             {
                 compra = tmp;
-
-
             }
         }
     }
@@ -166,6 +168,7 @@
     {
         var producto = productosBLL.Buscar(detalle.ProductoId);
         producto.Existencia -= detalle.Cantidad;
+        compra.Total = compra.Detalle.Sum(det => det.Importe);
         compra.Detalle.Remove(detalle);
     }
 
@@ -184,9 +187,12 @@
 
     void eliminar()
     {
-        if (CompraId != 0)
+        if (compra.CompraId != 0)
         {
-            comprasBLL.Eliminar(compra);
+            if (comprasBLL.Eliminar(compra))
+            {
+                nuevo();
+            }
         }
     }
 
@@ -215,16 +221,21 @@
             return;
         }
 
-        comprasBLL.Guardar(this.compra);
-        nuevo();
+        if (comprasBLL.Guardar(this.compra))
+        {
+            nuevo();
+        }
         if (CompraId != 0)
         {
-            redireccionar();
+            //redireccionar();
         }
     }
 
     void nuevo()
     {
+        if (CompraId > 0)
+            redireccionar();
+
         compra = new Compras();
         compra.CompraId = 0;
         compra.Fecha = DateTime.Now;
@@ -234,6 +245,6 @@
 
     public void redireccionar()
     {
-        navigationManager.NavigateTo("compra");
+        navigationManager.NavigateTo("Compra");
     }
 }

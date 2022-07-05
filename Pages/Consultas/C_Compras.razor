@@ -6,8 +6,8 @@
 
     <div class="card">
 
-        <div class="card-header">
-            <h4 style="text-align: center;">Consulta de compra</h4>
+        <div class="card-header text-center">
+            <h4>Consulta de compra</h4>
         </div>
 
         <div class="card-body">
@@ -88,11 +88,11 @@
 
     void Buscar()
     {
-        comprasList = comprasBLL.BuscarPorFecha(FechaDesde, FechaHasta);
+        comprasList = comprasBLL.GetListByDate(FechaDesde, FechaHasta);
     }
 
     public void redireccionar(int compraId)
     {
-        navigationManager.NavigateTo("compra/" + compraId);
+        navigationManager.NavigateTo("Compra/" + compraId);
     }
 }
