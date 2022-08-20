@@ -1,0 +1,129 @@
+﻿@page "/Producto"
+@page "/Producto/{ProductoId:int}"
+
+@inject ProductosBLL productosBLL
+@inject NavigationManager navigationManager;
+
+<EditForm Model="producto" OnValidSubmit="guardar">
+    <DataAnnotationsValidator />
+
+    <div class="card text-dark bg-light mb-3 shadow-lg">
+
+        <div class="card-header">
+            <h3>Registro de Productos</h3>
+        </div>
+
+        <div class="card-body">
+
+            <div class="col-3">
+                <label>ProductoId</label>
+                <div class="input-group mb-3">
+                    <InputNumber class="form-control" @bind-Value="producto.ProductoId" />
+                    <button class="btn btn-outline-primary" type="button" @onclick="Buscar"> <i class="oi oi-magnifying-glass" /> </button>
+                </div>
+                <ValidationMessage For="@(() => producto.Descripcion)" />
+            </div>
+
+            <div class="col-2">
+                <label>Descripción</label>
+                <InputText class="form-control" @bind-Value="producto.Descripcion" /> 
+                <ValidationMessage For="@(() => producto.Descripcion)" />
+            </div>
+            <div class="col-2">
+                <label>Costo</label>
+                <InputNumber class="form-control" @bind-Value="producto.Costo" /> 
+                <ValidationMessage For="@(() => producto.Costo)" />
+            </div>
+            <div class="col-2">
+                <label>Precio</label>
+                <InputNumber class="form-control" @bind-Value="producto.Precio" /> 
+                <ValidationMessage For="@(() => producto.Precio)" />
+            </div>
+
+        </div>
+
+        <div class="card-footer d-flex justify-content-center">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-primary" @onclick="nuevo"> <i class="oi oi-file" /> Nuevo</button>
+                <button type="submit" class="btn btn-success" > <i class="oi oi-document" /> Guardar</button>
+                <button type="button" class="btn btn-danger" @onclick="eliminar"><i class="oi oi-trash" /> Eliminar</button>
+            </div>
+        </div>
+
+    </div>
+
+</EditForm>
+
+@code {
+    [Parameter]
+    public int ProductoId { get; set; }
+    public Productos producto { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        producto = new Productos();
+
+        if (ProductoId > 0)
+        {
+            var tmp = productosBLL.Buscar(ProductoId);
+            if (tmp != null)
+            {
+                producto = tmp;
+            }
+        }
+    }
+
+    void Buscar()
+    {
+        var tmp = productosBLL.Buscar(producto.ProductoId);
+        if(tmp != null)
+        {
+            producto = tmp;
+        }
+        else
+        {
+            nuevo();
+        }
+    }
+
+    void eliminar()
+    {
+        if (producto.ProductoId != 0)
+        {
+            if (productosBLL.Eliminar(producto))
+            {
+                nuevo();
+            }
+        }
+    }
+
+    public void guardar()
+    {
+            Console.WriteLine("No se pudo guardar");
+        if (productosBLL.Guardar(producto))
+        {
+            nuevo();
+        } else
+        {
+        }
+        if (ProductoId != 0)
+        {
+            redireccionar();
+        }
+    }
+
+    void nuevo()
+    {
+        if (ProductoId > 0)
+            redireccionar();
+
+        producto = new Productos();
+    }
+
+    public void redireccionar()
+    {
+        navigationManager.NavigateTo("Producto");
+    }
+}
